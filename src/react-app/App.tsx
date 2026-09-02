@@ -7,17 +7,17 @@ type Product = {
   price: string;
   category: string;
   location: string;
-  emoji: string;
+  image: string;
 };
 
-const products: Product[] = [
+const initialProducts: Product[] = [
   {
     id: 1,
     title: "Téléphone Samsung",
     price: "850 DT",
     category: "Téléphones",
     location: "Hammamet",
-    emoji: "📱",
+    image: "📱",
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const products: Product[] = [
     price: "650 DT",
     category: "Maison",
     location: "Nabeul",
-    emoji: "🛋️",
+    image: "🛋️",
   },
   {
     id: 3,
@@ -33,7 +33,7 @@ const products: Product[] = [
     price: "420 DT",
     category: "Sports",
     location: "Hammamet",
-    emoji: "🚲",
+    image: "🚲",
   },
   {
     id: 4,
@@ -41,14 +41,22 @@ const products: Product[] = [
     price: "900 DT",
     category: "Maison",
     location: "Tunis",
-    emoji: "🪑",
+    image: "🪑",
   },
 ];
 
 function App() {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Tous");
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [showForm, setShowForm] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
+  const [newCategory, setNewCategory] = useState("Maison");
+  const [location, setLocation] = useState("");
+  const [image, setImage] = useState("📦");
 
   const categories = [
     "Tous",
@@ -78,6 +86,47 @@ function App() {
     );
   };
 
+  const handleImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setImage(reader.result as string);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const addProduct = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!title || !price || !location) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    const newProduct: Product = {
+      id: Date.now(),
+      title,
+      price: `${price} DT`,
+      category: newCategory,
+      location,
+      image,
+    };
+
+    setProducts((current) => [newProduct, ...current]);
+
+    setTitle("");
+    setPrice("");
+    setLocation("");
+    setNewCategory("Maison");
+    setImage("📦");
+    setShowForm(false);
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -87,7 +136,7 @@ function App() {
         </div>
 
         <nav>
-          <button>Accueil</button>
+          <button onClick={() => setShowForm(false)}>Accueil</button>
           <button>Catégories</button>
           <button>Mes favoris ❤️</button>
           <button className="login">Connexion</button>
@@ -104,11 +153,152 @@ function App() {
               La plateforme tunisienne pour acheter et vendre facilement.
             </p>
 
-            <button className="sell-button">
+            <button
+              className="sell-button"
+              onClick={() => setShowForm(true)}
+            >
               ＋ Ajouter une annonce
             </button>
           </div>
         </section>
+
+        {showForm && (
+          <section className="search-section">
+            <form className="search-box" onSubmit={addProduct}>
+              <div style={{ width: "100%" }}>
+                <h2 style={{ marginBottom: "20px" }}>
+                  Ajouter une annonce
+                </h2>
+
+                <input
+                  type="text"
+                  placeholder="Nom de la marchandise"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    marginBottom: "12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                  }}
+                />
+
+                <input
+                  type="number"
+                  placeholder="Prix en DT"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    marginBottom: "12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                  }}
+                />
+
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    marginBottom: "12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                  }}
+                >
+                  <option>Maison</option>
+                  <option>Téléphones</option>
+                  <option>Sports</option>
+                  <option>Mode</option>
+                  <option>Voitures</option>
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Ville / région"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    marginBottom: "12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                  }}
+                />
+
+                <label
+                  style={{
+                    display: "block",
+                    padding: "15px",
+                    marginBottom: "15px",
+                    border: "2px dashed #ccc",
+                    borderRadius: "10px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  📷 Choisir une photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImage}
+                    style={{ display: "none" }}
+                  />
+                </label>
+
+                {image.startsWith("data:image") ? (
+                  <img
+                    src={image}
+                    alt="Aperçu"
+                    style={{
+                      width: "100%",
+                      maxHeight: "250px",
+                      objectFit: "cover",
+                      borderRadius: "12px",
+                      marginBottom: "15px",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      fontSize: "60px",
+                      marginBottom: "15px",
+                    }}
+                  >
+                    {image}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="details"
+                >
+                  Publier l'annonce
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "11px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                    background: "white",
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
 
         <section className="search-section">
           <div className="search-box">
@@ -130,7 +320,9 @@ function App() {
               <button
                 key={item}
                 className={
-                  category === item ? "category active" : "category"
+                  category === item
+                    ? "category active"
+                    : "category"
                 }
                 onClick={() => setCategory(item)}
               >
@@ -150,13 +342,27 @@ function App() {
             {filteredProducts.map((product) => (
               <article className="product-card" key={product.id}>
                 <div className="product-image">
-                  <span>{product.emoji}</span>
+                  {product.image.startsWith("data:image") ? (
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span>{product.image}</span>
+                  )}
 
                   <button
                     className="favorite"
                     onClick={() => toggleFavorite(product.id)}
                   >
-                    {favorites.includes(product.id) ? "❤️" : "♡"}
+                    {favorites.includes(product.id)
+                      ? "❤️"
+                      : "♡"}
                   </button>
                 </div>
 
@@ -200,4 +406,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;  
