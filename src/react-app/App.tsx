@@ -1,5 +1,11 @@
-import { useState } from "react";
+ import { useEffect, useState } from "react";
 import "./App.css";
+
+type User = {
+  name: string;
+  email: string;
+  password: string;
+};
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -9,49 +15,101 @@ function App() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
-  const login = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [user, setUser] = useState<User | null>(null);
 
-    if (!email || !password) {
-      alert("Veuillez remplir tous les champs.");
-      return;
+  // تحميل الحساب عند فتح الموقع
+  useEffect(() => {
+    const savedUser = localStorage.getItem("sou9na_user");
+
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem("sou9na_user");
+      }
     }
+  }, []);
 
-    localStorage.setItem(
-      "sou9na_user",
-      JSON.stringify({
-        name: email.split("@")[0],
-        email: email,
-      })
-    );
-
-    alert("Connexion réussie !");
-    setShowLogin(false);
-    setEmail("");
-    setPassword("");
-  };
-
+  // إنشاء حساب
   const register = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !email || !password) {
+    if (!name.trim() || !email.trim() || !password) {
       alert("Veuillez remplir tous les champs.");
       return;
     }
 
-    localStorage.setItem(
-      "sou9na_user",
-      JSON.stringify({
-        name,
-        email,
-      })
-    );
+    if (password.length < 6) {
+      alert("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
 
-    alert("Compte créé avec succès !");
+    const newUser: User = {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password,
+    };
+
+    localStorage.setItem("sou9na_user", JSON.stringify(newUser));
+
+    setUser(newUser);
+
     setShowRegister(false);
+
     setName("");
     setEmail("");
     setPassword("");
+
+    alert("Compte créé avec succès !");
+  };
+
+  // Connexion
+  const login = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim() || !password) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    const savedUser = localStorage.getItem("sou9na_user");
+
+    if (!savedUser) {
+      alert("Aucun compte trouvé. Veuillez créer un compte.");
+      return;
+    }
+
+    try {
+      const registeredUser: User = JSON.parse(savedUser);
+
+      if (
+        registeredUser.email !== email.trim().toLowerCase() ||
+        registeredUser.password !== password
+      ) {
+        alert("Email ou mot de passe incorrect.");
+        return;
+      }
+
+      setUser(registeredUser);
+
+      setShowLogin(false);
+
+      setEmail("");
+      setPassword("");
+
+      alert(`Bienvenue ${registeredUser.name} 👋`);
+    } catch {
+      alert("Erreur. Veuillez créer un nouveau compte.");
+      localStorage.removeItem("sou9na_user");
+    }
+  };
+
+  // Déconnexion
+  const logout = () => {
+    localStorage.removeItem("sou9na_user");
+    setUser(null);
+
+    alert("Vous êtes déconnecté.");
   };
 
   return (
@@ -64,14 +122,31 @@ function App() {
           🛒 <span>Sou9na</span>
         </div>
 
-        {/* CONNEXION */}
-        <button
-          className="login-btn"
-          type="button"
-          onClick={() => setShowLogin(true)}
-        >
-          Connexion
-        </button>
+        {user ? (
+          <div className="user-area">
+
+            <span className="user-name">
+              👤 {user.name}
+            </span>
+
+            <button
+              className="login-btn"
+              type="button"
+              onClick={logout}
+            >
+              Déconnexion
+            </button>
+
+          </div>
+        ) : (
+          <button
+            className="login-btn"
+            type="button"
+            onClick={() => setShowLogin(true)}
+          >
+            Connexion
+          </button>
+        )}
 
       </header>
 
@@ -94,7 +169,13 @@ function App() {
         <button
           className="add-btn"
           type="button"
-          onClick={() => setShowLogin(true)}
+          onClick={() => {
+            if (user) {
+              alert("La création d'annonce sera disponible bientôt 🚀");
+            } else {
+              setShowLogin(true);
+            }
+          }}
         >
           ＋ Ajouter une annonce
         </button>
@@ -156,10 +237,7 @@ function App() {
       </main>
 
 
-      {/* ========================= */}
       {/* LOGIN */}
-      {/* ========================= */}
-
       {showLogin && (
 
         <div
@@ -192,25 +270,20 @@ function App() {
               Connectez-vous à votre compte Sou9na
             </p>
 
-
             <form onSubmit={login}>
 
               <input
                 type="email"
                 placeholder="Adresse email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
               />
 
               <input
                 type="password"
                 placeholder="Mot de passe"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
               />
 
               <button
@@ -221,7 +294,6 @@ function App() {
               </button>
 
             </form>
-
 
             <div className="switch-auth">
 
@@ -248,10 +320,7 @@ function App() {
       )}
 
 
-      {/* ========================= */}
       {/* REGISTER */}
-      {/* ========================= */}
-
       {showRegister && (
 
         <div
@@ -284,34 +353,27 @@ function App() {
               Rejoignez Sou9na gratuitement
             </p>
 
-
             <form onSubmit={register}>
 
               <input
                 type="text"
                 placeholder="Votre nom"
                 value={name}
-                onChange={(e) =>
-                  setName(e.target.value)
-                }
+                onChange={(e) => setName(e.target.value)}
               />
 
               <input
                 type="email"
                 placeholder="Adresse email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
               />
 
               <input
                 type="password"
                 placeholder="Mot de passe"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
               />
 
               <button
@@ -322,7 +384,6 @@ function App() {
               </button>
 
             </form>
-
 
             <div className="switch-auth">
 
@@ -352,4 +413,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;           
